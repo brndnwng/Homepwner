@@ -8,8 +8,10 @@
 
 #import "BNRDetailViewController.h"
 #import "BNRItem.h"
+#import "BNRImageStore.h"
 
-@interface BNRDetailViewController () <UINavigationControllerDelegate, UIImagePickerControllerDelegate>
+@interface BNRDetailViewController () <UINavigationControllerDelegate, UIImagePickerControllerDelegate, UITextFieldDelegate>
+- (IBAction)backgroundTapped:(id)sender;
 
 @property (weak, nonatomic) IBOutlet UIToolbar *toolbar;
 
@@ -23,6 +25,16 @@
 
 @implementation BNRDetailViewController
 
+- (IBAction)clearPicture:(id)sender {
+     [[BNRImageStore sharedStore] deleteImageForKey:self.item.itemKey];
+    self.imageView.image = nil;
+}
+
+- (BOOL)textFieldShouldReturn:(UITextField *)textField
+{
+    [textField resignFirstResponder];
+    return YES;
+}
 - (IBAction)takePicture:(id)sender
 {
     UIImagePickerController *imagePicker =
@@ -36,6 +48,9 @@
     } else {
         imagePicker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
     }
+    
+    //bronze
+    imagePicker.allowsEditing=YES;
     
     imagePicker.delegate = self;
     // Place image picker on the screen
@@ -63,6 +78,15 @@
     
     // Use filtered NSDate object to set dateLabel contents
     self.dateLabel.text = [dateFormatter stringFromDate:item.dateCreated];
+    
+    NSString *imageKey = self.item.itemKey;
+    
+    // Get the image for its image key from the image store
+    UIImage *imageToDisplay = [[BNRImageStore sharedStore] imageForKey:imageKey];
+    
+    // Use that image to put on the screen in the imageView
+    self.imageView.image = imageToDisplay;
+    
 }
 
 - (void)setItem:(BNRItem *)item
@@ -94,7 +118,19 @@
  didFinishPickingMediaWithInfo:(NSDictionary *)info
 {
     // Get picked image from info dictionary
-    UIImage *image = info[UIImagePickerControllerOriginalImage];
+    UIImage *image;
+    
+    //bronze
+    if(info[UIImagePickerControllerEditedImage]){
+        image = info[UIImagePickerControllerEditedImage];
+    }
+    else{
+        image = info[UIImagePickerControllerOriginalImage];
+    }
+    
+    // Store the image in the BNRImageStore for this key
+        [[BNRImageStore sharedStore] setImage:image
+                                       forKey:self.item.itemKey];
     
     // Put that image onto the screen in our image view
     self.imageView.image = image;
@@ -107,4 +143,9 @@
 
 
 
+- (IBAction)backgroundTapped:(id)sender {
+    [self.view endEditing:YES];
+
+    //bronze
+}
 @end
